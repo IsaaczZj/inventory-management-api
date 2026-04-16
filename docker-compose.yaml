@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: bitnami/postgresql:latest
+    environment:
+      POSTGRESQL_USERNAME: ${POSTGRESQL_USERNAME}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRESQL_DATABASE}
+    ports:
+      - '127.0.0.1:${POSTGRESQL_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/bitnami/postgresql
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -h 127.0.0.1 -p 5432 -U "$${POSTGRESQL_USERNAME}" -d "$${POSTGRESQL_DATABASE}"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
