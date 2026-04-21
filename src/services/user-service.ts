@@ -41,7 +41,7 @@ export const login = async (email: string, password: string) => {
   }
 
   const token = jwt.sign({ role: user.role }, process.env.JWT_SECRET!, {
-    expiresIn: "1d",
+    expiresIn: "1m",
     subject: user.id,
   });
   const formatedUser = formatUserReturn(user);
