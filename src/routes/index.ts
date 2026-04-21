@@ -7,5 +7,6 @@ router.get("/ping", (req: Request, res: Response) => {
   res.json({ pong: true });
 });
 
-router.use("/users", usersRoutes)
+router.use("/users", usersRoutes);
+
 export { router };

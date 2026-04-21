@@ -2,12 +2,13 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/connection";
 import { NewUser, User, users } from "../db/schema";
 import { hashPassword } from "../helpers/hash-password";
+import { AppError } from "../utils/app-error";
 
 export const createUser = async (data: NewUser) => {
   const userExists = await getUserByEmail(data.email);
 
   if (userExists) {
-    throw new Error("E-mail já está em uso");
+    throw new AppError("E-mail já está em uso");
   }
 
   const passwordHash = await hashPassword(data.password);
