@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db/connection";
 import { NewUser, User, users } from "../db/schema";
-import { hashPassword } from "../helpers/hash-password";
+import { hashPassword, verifyPassword } from "../helpers/hash-password";
 import { AppError } from "../utils/app-error";
+import jwt from "jsonwebtoken";
 
 export const createUser = async (data: NewUser) => {
   const userExists = await getUserByEmail(data.email);
@@ -20,6 +21,37 @@ export const createUser = async (data: NewUser) => {
   const result = await db.insert(users).values(newUser).returning();
 
   return formatUserReturn(result[0]);
+};
+
+export const login = async (email: string, password: string) => {
+  const user = await getUserByEmail(email);
+
+  if (!user) {
+    throw new AppError("E-mail ou senha inválidos");
+  }
+
+  const passwordHash =
+    user.password ??
+    "$2b$10$fakeHashToPreventTimingAttack.fakeHashToPreventTimingAttack.fake";
+
+  const isValidPassword = await verifyPassword(password, passwordHash);
+
+  if (!isValidPassword) {
+    throw new AppError("E-mail ou senha inválidos", 401);
+  }
+
+  const token = jwt.sign({ role: user.role }, process.env.JWT_SECRET!, {
+    expiresIn: "1d",
+    subject: user.id,
+  });
+  const formatedUser = formatUserReturn(user);
+
+  return {
+    token,
+    role: formatedUser.role,
+    name: formatedUser.name,
+    email: formatedUser.email,
+  };
 };
 
 //Helpers
