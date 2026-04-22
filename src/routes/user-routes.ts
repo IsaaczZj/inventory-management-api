@@ -10,4 +10,6 @@ usersRoutes.get("/", userController.listUsers);
 usersRoutes.get("/:id", userController.getUserById);
 
 usersRoutes.delete("/:id", userController.deleteUser);
+
+usersRoutes.put("/:id", userController.updateUser);
 export { usersRoutes };

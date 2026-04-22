@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import {
   createUserSchema,
   listUsersSchema,
+  updateUserSchema,
   userIdSchema,
 } from "../validators/user-validator";
 import * as userService from "../services/user-service";
@@ -32,4 +33,12 @@ export const deleteUser: RequestHandler = async (req, res) => {
   const deletedUser = await userService.deleteUser(id);
   if (!deletedUser) throw new AppError("Usuário não encontrado", 404);
   res.status(200).json({ error: null, data: "Usuário deletado com sucesso" });
+};
+
+export const updateUser: RequestHandler = async (req, res) => {
+  const { id } = userIdSchema.parse(req.params);
+  const data = updateUserSchema.parse(req.body);
+
+  const updatedUser = await userService.updateUser(id, data);
+  res.status(200).json({ error: null, data: updatedUser });
 };

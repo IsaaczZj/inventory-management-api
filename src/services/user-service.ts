@@ -96,8 +96,42 @@ export const deleteUser = async (id: string) => {
 
   return formatUserReturn(user) ?? null;
 };
+
+export const updateUser = async (id: string, data: Partial<NewUser>) => {
+  const user = await getUserById(id);
+  if (!user) throw new AppError("Usuário não encontrado", 404);
+
+  if (data.email && data.email !== user.email) {
+    const emailInUse = await getUserByEmail(data.email, true);
+    if (emailInUse) {
+      throw new AppError("E-mail já está em uso", 409);
+    }
+  }
+
+  const updateData: Partial<NewUser> = { ...data };
+
+  if (data.password) {
+    updateData.password = await hashPassword(data.password);
+  }
+  updateData.updatedAt = new Date();
+
+  const result = await db
+    .update(users)
+    .set(updateData)
+    .where(eq(users.id, id))
+    .returning();
+  const userUpdated = result[0];
+
+  if (!userUpdated || userUpdated.deletedAt) return null;
+
+  return formatUserReturn(userUpdated);
+};
+
 //Helpers
-const getUserByEmail = async (email: string) => {
+const getUserByEmail = async (
+  email: string,
+  includeDeleted: boolean = false,
+) => {
   const result = await db
     .select()
     .from(users)
@@ -105,7 +139,8 @@ const getUserByEmail = async (email: string) => {
     .limit(1);
   const user = result[0];
 
-  if (!user || user.deletedAt) return null;
+  if (!user) return null;
+  if (user && user.deletedAt && includeDeleted === false) return null;
 
   return user;
 };
