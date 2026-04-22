@@ -1,9 +1,10 @@
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import { db } from "../db/connection";
 import { NewUser, User, users } from "../db/schema";
 import { hashPassword, verifyPassword } from "../helpers/hash-password";
 import { AppError } from "../utils/app-error";
 import jwt from "jsonwebtoken";
+import { listUsersSchema } from "../validators/user-validator";
 
 export const createUser = async (data: NewUser) => {
   const userExists = await getUserByEmail(data.email);
@@ -41,7 +42,7 @@ export const login = async (email: string, password: string) => {
   }
 
   const token = jwt.sign({ role: user.role }, process.env.JWT_SECRET!, {
-    expiresIn: "1m",
+    expiresIn: "1d",
     subject: user.id,
   });
   const formatedUser = formatUserReturn(user);
@@ -52,6 +53,37 @@ export const login = async (email: string, password: string) => {
     name: formatedUser.name,
     email: formatedUser.email,
   };
+};
+
+export const me = async (id: string) => {
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  const user = result[0];
+  if (!user || user.deletedAt) {
+    throw new AppError("Usuário não encontrado", 404);
+  }
+  const formatedUser = formatUserReturn(user);
+  return formatedUser;
+};
+
+export const listUsers = async (offset: number = 0, limit: number = 10) => {
+  const usersList = await db
+    .select()
+    .from(users)
+    .where(isNull(users.deletedAt))
+    .offset(offset)
+    .limit(limit);
+  return usersList.map(formatUserReturn);
+};
+
+export const getUserById = async (id: string) => {
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  const user = result[0];
+
+  if (!user || user.deletedAt) {
+    throw new AppError("Usuário não encontrado", 404);
+  }
+
+  return formatUserReturn(user);
 };
 
 //Helpers
@@ -70,8 +102,12 @@ const getUserByEmail = async (email: string) => {
 
 const formatUserReturn = (user: User) => {
   const { password, ...userWhithoutPassword } = user;
+
   if (userWhithoutPassword.avatar) {
     userWhithoutPassword.avatar = `${process.env.BASE_URL}/static/avatars/${userWhithoutPassword.avatar}`;
   }
-  return userWhithoutPassword;
+
+  const { id, name, email, avatar, role } = userWhithoutPassword;
+
+  return { id, name, email, avatar, role };
 };
