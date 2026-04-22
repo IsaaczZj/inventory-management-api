@@ -5,6 +5,7 @@ import {
   userIdSchema,
 } from "../validators/user-validator";
 import * as userService from "../services/user-service";
+import { AppError } from "../utils/app-error";
 
 export const createUser: RequestHandler = async (req, res) => {
   const data = createUserSchema.parse(req.body);
@@ -24,4 +25,11 @@ export const getUserById: RequestHandler = async (req, res) => {
   const { id } = userIdSchema.parse(req.params);
   const user = await userService.getUserById(id);
   res.status(200).json({ error: null, data: user });
+};
+
+export const deleteUser: RequestHandler = async (req, res) => {
+  const { id } = userIdSchema.parse(req.params);
+  const deletedUser = await userService.deleteUser(id);
+  if (!deletedUser) throw new AppError("Usuário não encontrado", 404);
+  res.status(200).json({ error: null, data: "Usuário deletado com sucesso" });
 };

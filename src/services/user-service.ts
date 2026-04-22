@@ -86,6 +86,16 @@ export const getUserById = async (id: string) => {
   return formatUserReturn(user);
 };
 
+export const deleteUser = async (id: string) => {
+  const result = await db
+    .update(users)
+    .set({ deletedAt: new Date() })
+    .where(eq(users.id, id))
+    .returning();
+  const user = result[0];
+
+  return formatUserReturn(user) ?? null;
+};
 //Helpers
 const getUserByEmail = async (email: string) => {
   const result = await db
